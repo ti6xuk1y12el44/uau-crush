@@ -40,8 +40,6 @@ export default function App() {
   const [settings, setSettings] = useState({ haptics: true, animations: true, showHints: true });
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
-
-  // Power-ups
   const [powers, setPowers] = useState({ destroy: 3, shuffle: 2, bomb: 1 });
   const [activePower, setActivePower] = useState(null);
 
@@ -189,7 +187,6 @@ export default function App() {
     setTimeout(() => { setCascading(true); processCascade(nb, score, 0, nm); }, 250);
   }, [board, moves, score, cascading, processCascade, vib]);
 
-  // ── Power-up handlers ──
   const handleUsePower = useCallback((key) => {
     if (cascading || screen !== "playing") return;
 
@@ -220,7 +217,6 @@ export default function App() {
       spawnFloat(r, c, "+50", "💥");
       setScore((s) => s + 50);
       nb[r][c] = -1;
-      // gravity + fill
       for (let col = 0; col < COLS; col++) {
         let w = ROWS - 1;
         for (let row = ROWS - 1; row >= 0; row--)
@@ -230,7 +226,6 @@ export default function App() {
       setBoard(nb);
       vib(20);
       setActivePower(null);
-      // Check for cascade
       setTimeout(() => {
         const { count } = findMatches(nb);
         if (count > 0) { setCascading(true); processCascade(nb, score + 50, 0, moves); }
@@ -266,12 +261,9 @@ export default function App() {
     return false;
   }, [activePower, board, score, moves, spawnParticles, spawnFloat, vib, processCascade]);
 
-  // Pointer handling
   const handlePointerDown = useCallback((r, c, e) => {
     if (cascading || screen !== "playing" || paused) return;
     e.preventDefault();
-
-    // If power-up is active, use it
     if (activePower) {
       handlePowerClick(r, c);
       return;
@@ -374,11 +366,9 @@ export default function App() {
               <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: "#C9B89A" }}>{levelConf.target}</div>
             </div>
           </div>
-
           <div style={{ width: BOARD_PX, height: 6, borderRadius: 3, marginBottom: 8, overflow: "hidden", background: "rgba(18,9,4,0.8)", border: "1px solid #2a1a0e" }}>
             <div className="progress-bar" style={{ width: `${pct}%`, height: "100%", background: pct >= 100 ? "linear-gradient(90deg,#4CAF50,#66BB6A)" : "linear-gradient(90deg,#B8860B,#D4A843,#F2C94C)", boxShadow: pct >= 100 ? "0 0 8px rgba(76,175,80,0.4)" : "0 0 6px rgba(212,168,67,0.2)" }} />
           </div>
-
           <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
             {[1, 2, 3].map((s) => (
               <span key={s} style={{ fontSize: "1rem", opacity: s <= starsNow ? 1 : 0.15, transition: "opacity 0.4s", filter: s <= starsNow ? "drop-shadow(0 1px 4px rgba(242,201,76,0.4))" : "grayscale(1)" }}>⭐</span>

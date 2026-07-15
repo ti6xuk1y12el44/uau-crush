@@ -2,7 +2,7 @@ export default function SettingsModal({ settings, setSettings, totalStars, maxLe
   const items = [
     { key: "haptics", label: "Vibração", desc: "Feedback ao combinar" },
     { key: "animations", label: "Animações", desc: "Partículas e efeitos" },
-    { key: "showHints", label: "Dicas automáticas", desc: "Mostrar jogada após 4s" },
+    { key: "showHints", label: "Dicas automáticas", desc: "Mostrar jogada após 60s" },
   ];
 
   return (
