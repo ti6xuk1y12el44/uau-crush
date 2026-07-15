@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { LEVELS, COLS, ROWS, CELL, GAP, BOARD_PX } from "./constants/levels";
 import { CHOCOLATES } from "./constants/chocolates";
-import { createValidBoard, removeFill, hasValidMoves } from "./engine/board";
+import { createValidBoard, removeFill, hasValidMoves, shuffleBoard, removeType } from "./engine/board";
 import { findMatches, findHint } from "./engine/matching";
 import { calcStars, calcMatchPoints } from "./engine/scoring";
 import Piece from "./components/Piece";
@@ -12,6 +12,7 @@ import EndScreen from "./components/EndScreen";
 import SettingsModal from "./components/SettingsModal";
 import AboutModal from "./components/AboutModal";
 import PauseModal from "./components/PauseModal";
+import PowerUps from "./components/PowerUps";
 
 export default function App() {
   const [screen, setScreen] = useState("menu");
@@ -40,6 +41,10 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
 
+  // Power-ups
+  const [powers, setPowers] = useState({ destroy: 3, shuffle: 2, bomb: 1 });
+  const [activePower, setActivePower] = useState(null);
+
   const dragStart = useRef(null);
   const pIdRef = useRef(0);
   const fIdRef = useRef(0);
@@ -53,7 +58,6 @@ export default function App() {
     return () => clearTimeout(t);
   }, [score, displayScore]);
 
-  // Auto hint
   useEffect(() => {
     if (screen !== "playing" || cascading || paused || !settings.showHints) return;
     if (hintTimer.current) clearTimeout(hintTimer.current);
@@ -108,6 +112,8 @@ export default function App() {
     setLevel(lvl); setSelected(null); setCascading(false); setCombo(0);
     setParticles([]); setFloats([]); setNewCells(new Set()); setMatchedCells(null);
     setDragging(null); setHint(null); setShowHint(false); setPaused(false);
+    setActivePower(null);
+    setPowers({ destroy: 3, shuffle: 2, bomb: 1 });
     setScreen("playing");
   }, []);
 
@@ -183,12 +189,97 @@ export default function App() {
     setTimeout(() => { setCascading(true); processCascade(nb, score, 0, nm); }, 250);
   }, [board, moves, score, cascading, processCascade, vib]);
 
+  // ── Power-up handlers ──
+  const handleUsePower = useCallback((key) => {
+    if (cascading || screen !== "playing") return;
+
+    if (key === "shuffle") {
+      setPowers((p) => ({ ...p, shuffle: p.shuffle - 1 }));
+      const shuffled = shuffleBoard(board);
+      setBoard(shuffled);
+      vib(20);
+      setShowHint(false); setHint(null);
+      return;
+    }
+
+    if (key === "destroy" || key === "bomb") {
+      setActivePower(key);
+      setSelected(null);
+      return;
+    }
+  }, [cascading, screen, board, vib]);
+
+  const handlePowerClick = useCallback((r, c) => {
+    if (!activePower) return false;
+
+    if (activePower === "destroy") {
+      setPowers((p) => ({ ...p, destroy: p.destroy - 1 }));
+      const nb = board.map((row) => [...row]);
+      const type = nb[r][c];
+      spawnParticles([{ r, c }], type);
+      spawnFloat(r, c, "+50", "💥");
+      setScore((s) => s + 50);
+      nb[r][c] = -1;
+      // gravity + fill
+      for (let col = 0; col < COLS; col++) {
+        let w = ROWS - 1;
+        for (let row = ROWS - 1; row >= 0; row--)
+          if (nb[row][col] >= 0) { nb[w][col] = nb[row][col]; if (w !== row) nb[row][col] = -1; w--; }
+        for (let row = w; row >= 0; row--) nb[row][col] = Math.floor(Math.random() * CHOCOLATES.length);
+      }
+      setBoard(nb);
+      vib(20);
+      setActivePower(null);
+      // Check for cascade
+      setTimeout(() => {
+        const { count } = findMatches(nb);
+        if (count > 0) { setCascading(true); processCascade(nb, score + 50, 0, moves); }
+      }, 300);
+      return true;
+    }
+
+    if (activePower === "bomb") {
+      setPowers((p) => ({ ...p, bomb: p.bomb - 1 }));
+      const type = board[r][c];
+      const { matched, count } = removeType(board, type);
+      if (count > 0) {
+        setMatchedCells(matched);
+        const pts = count * 15;
+        setScore((s) => s + pts);
+        spawnFloat(r, c, `+${pts}`, "🔥 BOOM");
+        const positions = [];
+        for (let ri = 0; ri < ROWS; ri++)
+          for (let ci = 0; ci < COLS; ci++)
+            if (matched[ri][ci]) positions.push({ r: ri, c: ci });
+        spawnParticles(positions.slice(0, 8), type);
+        vib(40);
+        setTimeout(() => {
+          const nb = removeFill(board, matched);
+          setBoard(nb); setMatchedCells(null);
+          setActivePower(null);
+          setTimeout(() => { setCascading(true); processCascade(nb, score + pts, 0, moves); }, 300);
+        }, 400);
+      }
+      return true;
+    }
+
+    return false;
+  }, [activePower, board, score, moves, spawnParticles, spawnFloat, vib, processCascade]);
+
+  // Pointer handling
   const handlePointerDown = useCallback((r, c, e) => {
     if (cascading || screen !== "playing" || paused) return;
     e.preventDefault();
+
+    // If power-up is active, use it
+    if (activePower) {
+      handlePowerClick(r, c);
+      return;
+    }
+
     dragStart.current = { r, c, startX: e.clientX || 0, startY: e.clientY || 0, hasMoved: false };
     setDragging({ r, c }); setDragOffset({ x: 0, y: 0 }); setSelected({ r, c });
-  }, [cascading, screen, paused]);
+  }, [cascading, screen, paused, activePower, handlePowerClick]);
 
   useEffect(() => {
     if (!dragging) return;
@@ -236,7 +327,7 @@ export default function App() {
 
   const handleReset = () => { setMaxLevel(0); setBestScores({}); setTotalStars(0); setShowSettings(false); setScreen("menu"); };
 
-  const wrapper = (
+  return (
     <div id="app">
       {showSettings && (
         <SettingsModal settings={settings} setSettings={setSettings} totalStars={totalStars} maxLevel={maxLevel} onReset={handleReset} onClose={() => setShowSettings(false)} />
@@ -265,22 +356,22 @@ export default function App() {
         <>
           {paused && <PauseModal level={level} levelConf={levelConf} score={score} moves={moves} onResume={() => setPaused(false)} onRestart={() => startLevel(level)} onExit={() => { setPaused(false); setScreen("levels"); }} />}
 
-          <div style={{ textAlign: "center", marginBottom: 6 }}>
-            <span className="lbl" style={{ fontSize: "0.48rem", letterSpacing: 4 }}>Nível {level + 1} — {levelConf.label}</span>
+          <div style={{ textAlign: "center", marginBottom: 8 }}>
+            <span className="lbl" style={{ fontSize: "0.55rem", letterSpacing: 5 }}>Nível {level + 1} — {levelConf.label}</span>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: BOARD_PX, marginBottom: 6, padding: "4px 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: BOARD_PX, marginBottom: 8, padding: "4px 0" }}>
             <div style={{ textAlign: "center", flex: 1 }}>
               <div className="lbl">Jogadas</div>
-              <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: moves <= 5 ? "#FF6B6B" : moves <= 10 ? "#FFB347" : "#EDE0D0", animation: moves <= 3 ? "shimmer .5s ease-in-out infinite" : "none" }}>{moves}</div>
+              <div style={{ fontSize: "1.6rem", fontWeight: "bold", color: moves <= 5 ? "#FF6B6B" : moves <= 10 ? "#FFB347" : "#EDE0D0", animation: moves <= 3 ? "shimmer .5s ease-in-out infinite" : "none" }}>{moves}</div>
             </div>
             <div style={{ textAlign: "center", flex: 2 }}>
               <div className="lbl">Pontos</div>
-              <div style={{ fontSize: "1.8rem", fontWeight: "bold", color: "#F2C94C" }}>{displayScore}</div>
+              <div style={{ fontSize: "2rem", fontWeight: 900, color: "#F2C94C" }}>{displayScore}</div>
             </div>
             <div style={{ textAlign: "center", flex: 1 }}>
               <div className="lbl">Alvo</div>
-              <div style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#C9B89A" }}>{levelConf.target}</div>
+              <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: "#C9B89A" }}>{levelConf.target}</div>
             </div>
           </div>
 
@@ -288,13 +379,32 @@ export default function App() {
             <div className="progress-bar" style={{ width: `${pct}%`, height: "100%", background: pct >= 100 ? "linear-gradient(90deg,#4CAF50,#66BB6A)" : "linear-gradient(90deg,#B8860B,#D4A843,#F2C94C)", boxShadow: pct >= 100 ? "0 0 8px rgba(76,175,80,0.4)" : "0 0 6px rgba(212,168,67,0.2)" }} />
           </div>
 
-          <div style={{ display: "flex", gap: 2, marginBottom: 6 }}>
+          <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
             {[1, 2, 3].map((s) => (
-              <span key={s} style={{ fontSize: "0.9rem", opacity: s <= starsNow ? 1 : 0.15, transition: "opacity 0.4s", filter: s <= starsNow ? "drop-shadow(0 1px 4px rgba(242,201,76,0.4))" : "grayscale(1)" }}>⭐</span>
+              <span key={s} style={{ fontSize: "1rem", opacity: s <= starsNow ? 1 : 0.15, transition: "opacity 0.4s", filter: s <= starsNow ? "drop-shadow(0 1px 4px rgba(242,201,76,0.4))" : "grayscale(1)" }}>⭐</span>
             ))}
           </div>
 
-          <div className={`board${shake ? " shake" : ""}`} style={{ width: BOARD_PX, height: ROWS * (CELL + GAP) + GAP, padding: GAP, touchAction: "none" }}>
+          {activePower && (
+            <div style={{
+              marginBottom: 8, padding: "6px 16px", borderRadius: 12,
+              background: "rgba(74,224,122,0.1)", border: "1px solid rgba(74,224,122,0.25)",
+              fontSize: "0.7rem", color: "#4AE07A", fontFamily: "'Inter', sans-serif",
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <span>👆 Toca num chocolate para usar {activePower === "destroy" ? "a Tablete" : "o Choco Quente"}</span>
+              <button onClick={() => setActivePower(null)} style={{
+                background: "none", border: "1px solid #4AE07A40", borderRadius: 8,
+                color: "#4AE07A", cursor: "pointer", padding: "2px 8px", fontSize: "0.6rem",
+                fontFamily: "'Inter', sans-serif",
+              }}>✕ Cancelar</button>
+            </div>
+          )}
+
+          <div className={`board${shake ? " shake" : ""}`} style={{
+            width: BOARD_PX, height: ROWS * (CELL + GAP) + GAP, padding: GAP, touchAction: "none",
+            cursor: activePower ? "crosshair" : "default",
+          }}>
             {[...Array(ROWS)].map((_, r) => [...Array(COLS)].map((_, c) => (
               <div key={`bg-${r}-${c}`} className="cell-bg" style={{ left: c * (CELL + GAP), top: r * (CELL + GAP), width: CELL, height: CELL }} />
             )))}
@@ -323,15 +433,15 @@ export default function App() {
               </div>
             ))}
           </div>
-
           {combo > 1 && (
             <div className="combo-badge">🔥 COMBO ×{(1 + (combo - 1) * 0.5).toFixed(1)}</div>
           )}
+          <PowerUps powers={powers} onUse={handleUsePower} disabled={cascading || paused} />
 
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button className="btn-g" onClick={() => setPaused(true)} style={{ padding: "8px 16px", fontSize: "0.7rem" }}>⏸ Pausa</button>
-            <button className="btn-g" onClick={() => startLevel(level)} style={{ padding: "8px 16px", fontSize: "0.7rem" }}>↻ Recomeçar</button>
-            <button className="btn-g" onClick={() => setShowSettings(true)} style={{ padding: "8px 16px", fontSize: "0.7rem" }}>⚙️</button>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button className="btn-g" onClick={() => setPaused(true)} style={{ padding: "8px 16px", fontSize: "0.75rem" }}>⏸ Pausa</button>
+            <button className="btn-g" onClick={() => startLevel(level)} style={{ padding: "8px 16px", fontSize: "0.75rem" }}>↻ Recomeçar</button>
+            <button className="btn-g" onClick={() => setShowSettings(true)} style={{ padding: "8px 16px", fontSize: "0.75rem" }}>⚙️</button>
           </div>
 
           {showHint && !cascading && (
@@ -341,6 +451,4 @@ export default function App() {
       )}
     </div>
   );
-
-  return wrapper;
 }

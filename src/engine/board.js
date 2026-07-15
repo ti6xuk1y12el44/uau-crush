@@ -59,3 +59,33 @@ export function createValidBoard() {
   while (!hasValidMoves(b)) b = createBoard();
   return b;
 }
+export function shuffleBoard(board) {
+  const flat = [];
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      flat.push(board[r][c]);
+
+  // Fisher-Yates shuffle
+  for (let i = flat.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [flat[i], flat[j]] = [flat[j], flat[i]];
+  }
+
+  const newBoard = [];
+  for (let r = 0; r < ROWS; r++) {
+    newBoard[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      newBoard[r][c] = flat[r * COLS + c];
+    }
+  }
+  return newBoard;
+}
+
+export function removeType(board, type) {
+  const matched = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+  let count = 0;
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (board[r][c] === type) { matched[r][c] = true; count++; }
+  return { matched, count };
+}
