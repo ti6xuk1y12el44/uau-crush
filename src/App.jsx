@@ -65,7 +65,7 @@ export default function App() {
     hintTimer.current = setTimeout(() => {
       const h = findHint(board);
       if (h) { setHint(h); setShowHint(true); }
-    }, 4000);
+    }, 60.000);
     return () => { if (hintTimer.current) clearTimeout(hintTimer.current); };
   }, [board, selected, cascading, screen, paused, settings.showHints]);
 
