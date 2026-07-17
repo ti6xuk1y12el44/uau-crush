@@ -27,7 +27,6 @@ export default function Confetti({ active }) {
   }, [active]);
 
   if (pieces.length === 0) return null;
-
   return (
     <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1000, overflow: "hidden" }}>
       {pieces.map((p) => (

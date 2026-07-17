@@ -1,3 +1,4 @@
+import Tutorial from "./components/Tutorial";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { LEVELS, COLS, ROWS, recalcSizes } from "./constants/levels";
 import { CHOCOLATES } from "./constants/chocolates";
@@ -57,6 +58,7 @@ export default function App() {
   const [powers, setPowers] = useState({ destroy: 3, shuffle: 2, bomb: 1 });
   const [activePower, setActivePower] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(() => !loadProgress());
 
   const dragStart = useRef(null);
   const pIdRef = useRef(0);
@@ -347,6 +349,7 @@ export default function App() {
   return (
     <div id="app">
       <Confetti active={showConfetti} />
+      {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
       {showSettings && <SettingsModal settings={settings} setSettings={setSettings} totalStars={totalStars} maxLevel={maxLevel} onReset={handleReset} onClose={() => setShowSettings(false)} />}
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 

@@ -5,44 +5,48 @@ export default function EndScreen({ isWin, score, level, levelConf, bestScore, o
   const stars = calcStars(score, levelConf.target);
   const isNewRecord = isWin && (!bestScore || score >= bestScore.score);
   const hasNext = level < LEVELS.length - 1;
+  const pct = Math.min(100, (score / levelConf.target) * 100);
 
   return (
-    <div style={{ textAlign: "center", animation: "slideIn 0.5s ease both", maxWidth: 400 }}>
-      {/* Emoji */}
+    <div style={{ textAlign: "center", animation: "slideIn 0.5s ease both", maxWidth: 400, width: "90%" }}>
+      {/* Icon */}
       <div style={{
-        width: 80, height: 80, margin: "0 auto 16px",
+        width: 90, height: 90, margin: "0 auto 16px",
         borderRadius: "50%",
         background: isWin
-          ? "linear-gradient(145deg, rgba(212,168,67,0.15), rgba(212,168,67,0.05))"
-          : "linear-gradient(145deg, rgba(232,68,58,0.1), rgba(150,45,34,0.05))",
-        border: isWin ? "2px solid #D4A84330" : "2px solid #96221930",
+          ? "linear-gradient(145deg, #FF8C42, #E85D26)"
+          : "linear-gradient(145deg, #5c3520, #3a1e10)",
+        border: isWin ? "3px solid #FFD666" : "3px solid #5c3520",
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: "2.8rem",
-        boxShadow: isWin ? "0 0 30px rgba(212,168,67,0.1)" : "none",
+        fontSize: "3rem",
+        boxShadow: isWin
+          ? "0 0 0 3px #9C3310, 0 0 30px rgba(255,140,66,0.3), 0 8px 24px rgba(0,0,0,0.3)"
+          : "0 8px 24px rgba(0,0,0,0.3)",
       }}>
         {isWin ? "🎉" : "💔"}
       </div>
 
-      <h2 className="gold" style={{ fontSize: "2.2rem", margin: "0 0 4px", letterSpacing: 3, fontWeight: 900 }}>
+      <h2 style={{
+        fontSize: "2rem", margin: "0 0 4px", letterSpacing: 2, fontWeight: 900,
+        color: "#FFD666", fontFamily: "'Fredoka One', sans-serif",
+      }}>
         {isWin ? "Nível Completo!" : "Sem jogadas!"}
       </h2>
 
-      <div style={{
-        width: 40, height: 2, margin: "8px auto 12px",
-        background: "linear-gradient(90deg, transparent, #D4A843, transparent)",
-      }} />
-
-      <p className="lbl" style={{ margin: "0 0 20px", letterSpacing: 6, fontSize: "0.7rem" }}>{levelConf.label}</p>
+      <p style={{
+        fontSize: "0.8rem", color: "#FFBB77", letterSpacing: 4,
+        textTransform: "uppercase", margin: "0 0 16px", fontWeight: 700,
+      }}>{levelConf.label}</p>
 
       {/* Stars */}
       {isWin && (
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 20 }}>
           {[1, 2, 3].map((s) => (
             <span key={s} style={{
-              fontSize: "3rem",
+              fontSize: "3.2rem",
               animation: s <= stars ? `starPop 0.5s ${s * 0.25}s both` : "none",
-              opacity: s <= stars ? 1 : 0.12,
-              filter: s <= stars ? "drop-shadow(0 2px 12px rgba(242,201,76,0.5))" : "grayscale(1)",
+              opacity: s <= stars ? 1 : 0.15,
+              filter: s <= stars ? "drop-shadow(0 3px 12px rgba(255,200,60,0.6))" : "grayscale(1)",
             }}>⭐</span>
           ))}
         </div>
@@ -50,56 +54,69 @@ export default function EndScreen({ isWin, score, level, levelConf, bestScore, o
 
       {/* Score card */}
       <div style={{
-        background: "linear-gradient(145deg, rgba(26,14,5,0.6), rgba(13,7,5,0.4))",
-        borderRadius: 20, padding: "24px 44px", marginBottom: 28,
-        border: "1px solid #2a1a0e",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+        background: "rgba(0,0,0,0.25)", borderRadius: 20, padding: "20px 24px",
+        marginBottom: 20, border: "2px solid #5c3520",
       }}>
-        <div className="lbl" style={{ fontSize: "0.55rem", marginBottom: 4 }}>Pontuação</div>
+        {/* Score */}
+        <div style={{ fontSize: "0.6rem", color: "#FFBB77", fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>PONTUAÇÃO</div>
         <div style={{
-          fontSize: "3.2rem", fontWeight: 900, margin: "4px 0",
-          background: "linear-gradient(135deg, #F2C94C, #D4A843)",
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+          fontSize: "3rem", fontWeight: 900, margin: "0 0 8px",
+          color: "#FFD666", fontFamily: "'Fredoka One', sans-serif",
         }}>{score}</div>
-        <div style={{
-          width: "100%", height: 4, borderRadius: 2, marginTop: 8, marginBottom: 8,
-          background: "#0d0705", overflow: "hidden",
-        }}>
+
+        {/* Progress bar */}
+        <div style={{ height: 8, borderRadius: 8, background: "rgba(0,0,0,0.3)", marginBottom: 8, overflow: "hidden", border: "1px solid #3a1e10" }}>
           <div style={{
-            width: `${Math.min(100, (score / levelConf.target) * 100)}%`,
-            height: "100%", borderRadius: 2,
-            background: score >= levelConf.target
+            width: `${pct}%`, height: "100%", borderRadius: 8,
+            background: pct >= 100
               ? "linear-gradient(90deg, #4CAF50, #66BB6A)"
-              : "linear-gradient(90deg, #B8860B, #D4A843)",
+              : "linear-gradient(90deg, #E85D26, #FF8C42, #FFD666)",
+            transition: "width 0.8s ease",
           }} />
         </div>
-        <div style={{ fontSize: "0.7rem", color: "#8B7355", fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ fontSize: "0.75rem", color: "#A06030", fontWeight: 700 }}>
           Objetivo: {levelConf.target}
         </div>
-        {bestScore && bestScore.score > score && (
-          <div style={{ fontSize: "0.65rem", color: "#A08B70", marginTop: 8, fontFamily: "'Inter', sans-serif" }}>
-            Recorde: {bestScore.score}
+
+        {/* Best score */}
+        {bestScore && (
+          <div style={{
+            marginTop: 12, padding: "8px 16px", borderRadius: 12,
+            background: "rgba(0,0,0,0.15)", border: "1px solid #3a1e10",
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+          }}>
+            <span style={{ fontSize: "0.7rem", color: "#A06030", fontWeight: 700 }}>🏆 Melhor</span>
+            <span style={{ fontSize: "0.9rem", color: "#FFD666", fontWeight: 900, fontFamily: "'Fredoka One', sans-serif" }}>
+              {Math.max(score, bestScore.score)}
+            </span>
+            <span style={{ fontSize: "0.7rem" }}>
+              {"⭐".repeat(Math.max(stars, bestScore.stars))}
+            </span>
           </div>
         )}
+
         {isNewRecord && (
           <div style={{
-            display: "inline-block", marginTop: 10, padding: "4px 14px", borderRadius: 12,
-            background: "rgba(74,224,122,0.1)", border: "1px solid rgba(74,224,122,0.2)",
-            fontSize: "0.65rem", color: "#4AE07A", fontFamily: "'Inter', sans-serif",
+            display: "inline-block", marginTop: 12, padding: "6px 18px", borderRadius: 20,
+            background: "linear-gradient(180deg, #4CAF50, #388E3C)",
+            fontSize: "0.75rem", color: "#FFF", fontWeight: 800,
+            fontFamily: "'Nunito', sans-serif",
+            boxShadow: "0 3px 0 #2E7D32",
+            animation: "comboSlide 0.4s ease both",
           }}>
-            🏆 Novo recorde!
+            🏆 NOVO RECORDE!
           </div>
         )}
       </div>
 
       {/* Buttons */}
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
         <button className="btn-p" onClick={isWin ? (hasNext ? onNext : onRetry) : onRetry} style={{
-          fontSize: "1.1rem", padding: "16px 48px",
+          fontSize: "1.1rem", padding: "14px 40px",
         }}>
-          {isWin && hasNext ? "Próximo Nível" : "Tentar Outra Vez"}
+          {isWin && hasNext ? "Próximo →" : "Tentar Outra Vez"}
         </button>
-        <button className="btn-g" onClick={onLevels}>Mapa</button>
+        <button className="btn-g" onClick={onLevels} style={{ padding: "12px 24px" }}>🗺️ Mapa</button>
       </div>
     </div>
   );
