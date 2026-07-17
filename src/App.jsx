@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { LEVELS, COLS, ROWS, CELL, GAP, BOARD_PX } from "./constants/levels";
+import { LEVELS, COLS, ROWS, recalcSizes } from "./constants/levels";
 import { CHOCOLATES } from "./constants/chocolates";
 import { createValidBoard, removeFill, hasValidMoves, shuffleBoard, removeType } from "./engine/board";
 import { findMatches, findHint } from "./engine/matching";
@@ -15,6 +15,15 @@ import PauseModal from "./components/PauseModal";
 import PowerUps from "./components/PowerUps";
 
 export default function App() {
+  // Responsive sizing
+  const [sizes, setSizes] = useState(() => recalcSizes());
+  useEffect(() => {
+    const onResize = () => setSizes(recalcSizes());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const { CELL, GAP, BOARD_PX } = sizes;
+
   const [screen, setScreen] = useState("menu");
   const [level, setLevel] = useState(0);
   const [maxLevel, setMaxLevel] = useState(0);
@@ -96,13 +105,13 @@ export default function App() {
     });
     setParticles((prev) => [...prev, ...newP]);
     setTimeout(() => setParticles((prev) => prev.filter((p) => !newP.includes(p))), 900);
-  }, [settings.animations]);
+  }, [settings.animations, CELL, GAP]);
 
   const spawnFloat = useCallback((r, c, text, sub) => {
     const id = ++fIdRef.current;
     setFloats((prev) => [...prev, { id, x: c * (CELL + GAP), y: r * (CELL + GAP), text, sub }]);
     setTimeout(() => setFloats((prev) => prev.filter((f) => f.id !== id)), 1000);
-  }, []);
+  }, [CELL, GAP]);
 
   const startLevel = useCallback((lvl) => {
     setBoard(createValidBoard());
@@ -189,26 +198,21 @@ export default function App() {
 
   const handleUsePower = useCallback((key) => {
     if (cascading || screen !== "playing") return;
-
     if (key === "shuffle") {
       setPowers((p) => ({ ...p, shuffle: p.shuffle - 1 }));
-      const shuffled = shuffleBoard(board);
-      setBoard(shuffled);
+      setBoard(shuffleBoard(board));
       vib(20);
       setShowHint(false); setHint(null);
       return;
     }
-
     if (key === "destroy" || key === "bomb") {
       setActivePower(key);
       setSelected(null);
-      return;
     }
   }, [cascading, screen, board, vib]);
 
   const handlePowerClick = useCallback((r, c) => {
     if (!activePower) return false;
-
     if (activePower === "destroy") {
       setPowers((p) => ({ ...p, destroy: p.destroy - 1 }));
       const nb = board.map((row) => [...row]);
@@ -223,16 +227,12 @@ export default function App() {
           if (nb[row][col] >= 0) { nb[w][col] = nb[row][col]; if (w !== row) nb[row][col] = -1; w--; }
         for (let row = w; row >= 0; row--) nb[row][col] = Math.floor(Math.random() * CHOCOLATES.length);
       }
-      setBoard(nb);
-      vib(20);
-      setActivePower(null);
+      setBoard(nb); vib(20); setActivePower(null);
       setTimeout(() => {
-        const { count } = findMatches(nb);
-        if (count > 0) { setCascading(true); processCascade(nb, score + 50, 0, moves); }
+        if (findMatches(nb).count > 0) { setCascading(true); processCascade(nb, score + 50, 0, moves); }
       }, 300);
       return true;
     }
-
     if (activePower === "bomb") {
       setPowers((p) => ({ ...p, bomb: p.bomb - 1 }));
       const type = board[r][c];
@@ -250,25 +250,19 @@ export default function App() {
         vib(40);
         setTimeout(() => {
           const nb = removeFill(board, matched);
-          setBoard(nb); setMatchedCells(null);
-          setActivePower(null);
+          setBoard(nb); setMatchedCells(null); setActivePower(null);
           setTimeout(() => { setCascading(true); processCascade(nb, score + pts, 0, moves); }, 300);
         }, 400);
       }
       return true;
     }
-
     return false;
   }, [activePower, board, score, moves, spawnParticles, spawnFloat, vib, processCascade]);
 
   const handlePointerDown = useCallback((r, c, e) => {
     if (cascading || screen !== "playing" || paused) return;
     e.preventDefault();
-    if (activePower) {
-      handlePowerClick(r, c);
-      return;
-    }
-
+    if (activePower) { handlePowerClick(r, c); return; }
     dragStart.current = { r, c, startX: e.clientX || 0, startY: e.clientY || 0, hasMoved: false };
     setDragging({ r, c }); setDragOffset({ x: 0, y: 0 }); setSelected({ r, c });
   }, [cascading, screen, paused, activePower, handlePowerClick]);
@@ -311,83 +305,74 @@ export default function App() {
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
     return () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); window.removeEventListener("pointercancel", onUp); };
-  }, [dragging, selected, doSwap]);
+  }, [dragging, selected, doSwap, CELL, GAP]);
 
   const levelConf = LEVELS[level] || LEVELS[0];
   const pct = Math.min(100, (score / levelConf.target) * 100);
   const starsNow = calcStars(score, levelConf.target);
-
   const handleReset = () => { setMaxLevel(0); setBestScores({}); setTotalStars(0); setShowSettings(false); setScreen("menu"); };
+
+  const isMobile = CELL < 50;
 
   return (
     <div id="app">
-      {showSettings && (
-        <SettingsModal settings={settings} setSettings={setSettings} totalStars={totalStars} maxLevel={maxLevel} onReset={handleReset} onClose={() => setShowSettings(false)} />
-      )}
+      {showSettings && <SettingsModal settings={settings} setSettings={setSettings} totalStars={totalStars} maxLevel={maxLevel} onReset={handleReset} onClose={() => setShowSettings(false)} />}
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 
-      {screen === "menu" && (
-        <Menu totalStars={totalStars} onPlay={() => setScreen("levels")} onSettings={() => setShowSettings(true)} onAbout={() => setShowAbout(true)} />
-      )}
+      {screen === "menu" && <Menu totalStars={totalStars} onPlay={() => setScreen("levels")} onSettings={() => setShowSettings(true)} onAbout={() => setShowAbout(true)} />}
 
-      {screen === "levels" && (
-        <Levels maxLevel={maxLevel} bestScores={bestScores} totalStars={totalStars} onStart={startLevel} onBack={() => setScreen("menu")} onSettings={() => setShowSettings(true)} />
-      )}
+      {screen === "levels" && <Levels maxLevel={maxLevel} bestScores={bestScores} totalStars={totalStars} onStart={startLevel} onBack={() => setScreen("menu")} onSettings={() => setShowSettings(true)} />}
 
       {(screen === "win" || screen === "lose") && (
-        <EndScreen
-          isWin={screen === "win"} score={score} level={level} levelConf={levelConf}
-          bestScore={bestScores[level]}
+        <EndScreen isWin={screen === "win"} score={score} level={level} levelConf={levelConf} bestScore={bestScores[level]}
           onNext={() => { if (level < LEVELS.length - 1) startLevel(level + 1); else startLevel(level); }}
-          onRetry={() => startLevel(level)}
-          onLevels={() => setScreen("levels")}
-        />
+          onRetry={() => startLevel(level)} onLevels={() => setScreen("levels")} />
       )}
 
       {screen === "playing" && (
         <>
           {paused && <PauseModal level={level} levelConf={levelConf} score={score} moves={moves} onResume={() => setPaused(false)} onRestart={() => startLevel(level)} onExit={() => { setPaused(false); setScreen("levels"); }} />}
 
-          <div style={{ textAlign: "center", marginBottom: 8 }}>
-            <span className="lbl" style={{ fontSize: "0.55rem", letterSpacing: 5 }}>Nível {level + 1} — {levelConf.label}</span>
+          <div style={{ textAlign: "center", marginBottom: isMobile ? 4 : 8 }}>
+            <span className="lbl" style={{ fontSize: isMobile ? "0.5rem" : "0.55rem", letterSpacing: 5 }}>
+              Nível {level + 1} — {levelConf.label}
+            </span>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: BOARD_PX, marginBottom: 8, padding: "4px 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: BOARD_PX, marginBottom: isMobile ? 4 : 8, padding: "4px 0" }}>
             <div style={{ textAlign: "center", flex: 1 }}>
-              <div className="lbl">Jogadas</div>
-              <div style={{ fontSize: "1.6rem", fontWeight: "bold", color: moves <= 5 ? "#FF6B6B" : moves <= 10 ? "#FFB347" : "#EDE0D0", animation: moves <= 3 ? "shimmer .5s ease-in-out infinite" : "none" }}>{moves}</div>
+              <div className="lbl" style={{ fontSize: isMobile ? "0.5rem" : "0.65rem" }}>Jogadas</div>
+              <div style={{ fontSize: isMobile ? "1.3rem" : "1.6rem", fontWeight: "bold", color: moves <= 5 ? "#FF6B6B" : moves <= 10 ? "#FFB347" : "#EDE0D0", animation: moves <= 3 ? "shimmer .5s ease-in-out infinite" : "none" }}>{moves}</div>
             </div>
             <div style={{ textAlign: "center", flex: 2 }}>
-              <div className="lbl">Pontos</div>
-              <div style={{ fontSize: "2rem", fontWeight: 900, color: "#F2C94C" }}>{displayScore}</div>
+              <div className="lbl" style={{ fontSize: isMobile ? "0.5rem" : "0.65rem" }}>Pontos</div>
+              <div style={{ fontSize: isMobile ? "1.5rem" : "2rem", fontWeight: 900, color: "#F2C94C" }}>{displayScore}</div>
             </div>
             <div style={{ textAlign: "center", flex: 1 }}>
-              <div className="lbl">Alvo</div>
-              <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: "#C9B89A" }}>{levelConf.target}</div>
+              <div className="lbl" style={{ fontSize: isMobile ? "0.5rem" : "0.65rem" }}>Alvo</div>
+              <div style={{ fontSize: isMobile ? "1rem" : "1.2rem", fontWeight: "bold", color: "#C9B89A" }}>{levelConf.target}</div>
             </div>
           </div>
-          <div style={{ width: BOARD_PX, height: 6, borderRadius: 3, marginBottom: 8, overflow: "hidden", background: "rgba(18,9,4,0.8)", border: "1px solid #2a1a0e" }}>
+
+          <div style={{ width: BOARD_PX, height: 5, borderRadius: 3, marginBottom: isMobile ? 4 : 8, overflow: "hidden", background: "rgba(18,9,4,0.8)", border: "1px solid #2a1a0e" }}>
             <div className="progress-bar" style={{ width: `${pct}%`, height: "100%", background: pct >= 100 ? "linear-gradient(90deg,#4CAF50,#66BB6A)" : "linear-gradient(90deg,#B8860B,#D4A843,#F2C94C)", boxShadow: pct >= 100 ? "0 0 8px rgba(76,175,80,0.4)" : "0 0 6px rgba(212,168,67,0.2)" }} />
           </div>
-          <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
+
+          <div style={{ display: "flex", gap: 2, marginBottom: isMobile ? 4 : 8 }}>
             {[1, 2, 3].map((s) => (
-              <span key={s} style={{ fontSize: "1rem", opacity: s <= starsNow ? 1 : 0.15, transition: "opacity 0.4s", filter: s <= starsNow ? "drop-shadow(0 1px 4px rgba(242,201,76,0.4))" : "grayscale(1)" }}>⭐</span>
+              <span key={s} style={{ fontSize: isMobile ? "0.8rem" : "1rem", opacity: s <= starsNow ? 1 : 0.15, transition: "opacity 0.4s", filter: s <= starsNow ? "drop-shadow(0 1px 4px rgba(242,201,76,0.4))" : "grayscale(1)" }}>⭐</span>
             ))}
           </div>
 
           {activePower && (
             <div style={{
-              marginBottom: 8, padding: "6px 16px", borderRadius: 12,
+              marginBottom: 6, padding: "5px 14px", borderRadius: 12,
               background: "rgba(74,224,122,0.1)", border: "1px solid rgba(74,224,122,0.25)",
-              fontSize: "0.7rem", color: "#4AE07A", fontFamily: "'Inter', sans-serif",
+              fontSize: isMobile ? "0.6rem" : "0.7rem", color: "#4AE07A", fontFamily: "'Inter', sans-serif",
               display: "flex", alignItems: "center", gap: 8,
             }}>
-              <span>👆 Toca num chocolate para usar {activePower === "destroy" ? "a Tablete" : "o Choco Quente"}</span>
-              <button onClick={() => setActivePower(null)} style={{
-                background: "none", border: "1px solid #4AE07A40", borderRadius: 8,
-                color: "#4AE07A", cursor: "pointer", padding: "2px 8px", fontSize: "0.6rem",
-                fontFamily: "'Inter', sans-serif",
-              }}>✕ Cancelar</button>
+              <span>👆 Toca num chocolate</span>
+              <button onClick={() => setActivePower(null)} style={{ background: "none", border: "1px solid #4AE07A40", borderRadius: 8, color: "#4AE07A", cursor: "pointer", padding: "2px 8px", fontSize: "0.55rem", fontFamily: "'Inter', sans-serif" }}>✕</button>
             </div>
           )}
 
@@ -402,7 +387,7 @@ export default function App() {
             {board.map((row, r) => row.map((type, c) => {
               if (type < 0) return null;
               return (
-                <Piece key={`${r}-${c}`} type={type} r={r} c={c}
+                <Piece key={`${r}-${c}`} type={type} r={r} c={c} cellSize={CELL} gapSize={GAP}
                   isSelected={selected?.r === r && selected?.c === c}
                   isDragging={dragging?.r === r && dragging?.c === c}
                   dragOffset={dragging?.r === r && dragging?.c === c ? dragOffset : { x: 0, y: 0 }}
@@ -423,20 +408,18 @@ export default function App() {
               </div>
             ))}
           </div>
-          {combo > 1 && (
-            <div className="combo-badge">🔥 COMBO ×{(1 + (combo - 1) * 0.5).toFixed(1)}</div>
-          )}
+
+          {combo > 1 && <div className="combo-badge">🔥 COMBO ×{(1 + (combo - 1) * 0.5).toFixed(1)}</div>}
+
           <PowerUps powers={powers} onUse={handleUsePower} disabled={cascading || paused} />
 
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <button className="btn-g" onClick={() => setPaused(true)} style={{ padding: "8px 16px", fontSize: "0.75rem" }}>⏸ Pausa</button>
-            <button className="btn-g" onClick={() => startLevel(level)} style={{ padding: "8px 16px", fontSize: "0.75rem" }}>↻ Recomeçar</button>
-            <button className="btn-g" onClick={() => setShowSettings(true)} style={{ padding: "8px 16px", fontSize: "0.75rem" }}>⚙️</button>
+          <div style={{ display: "flex", gap: 8, marginTop: isMobile ? 6 : 12 }}>
+            <button className="btn-g" onClick={() => setPaused(true)} style={{ padding: isMobile ? "6px 12px" : "8px 16px", fontSize: isMobile ? "0.65rem" : "0.75rem" }}>⏸ Pausa</button>
+            <button className="btn-g" onClick={() => startLevel(level)} style={{ padding: isMobile ? "6px 12px" : "8px 16px", fontSize: isMobile ? "0.65rem" : "0.75rem" }}>↻ Recomeçar</button>
+            <button className="btn-g" onClick={() => setShowSettings(true)} style={{ padding: isMobile ? "6px 12px" : "8px 16px", fontSize: isMobile ? "0.65rem" : "0.75rem" }}>⚙️</button>
           </div>
 
-          {showHint && !cascading && (
-            <div className="hint-txt">💡 Dica disponível — olha para o tabuleiro</div>
-          )}
+          {showHint && !cascading && <div className="hint-txt">💡 Dica disponível</div>}
         </>
       )}
     </div>

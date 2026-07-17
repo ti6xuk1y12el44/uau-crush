@@ -1,8 +1,29 @@
 export const COLS = 8;
 export const ROWS = 8;
-export const CELL = 60;
-export const GAP = 5;
-export const BOARD_PX = COLS * (CELL + GAP) + GAP;
+
+// Calcula o tamanho das peças com base na largura do ecrã
+function calcSize() {
+  const screenW = typeof window !== "undefined" ? window.innerWidth : 800;
+  const maxBoardW = Math.min(screenW - 32, 520); // 16px padding de cada lado, max 520
+  const gap = screenW < 500 ? 3 : 5;
+  const cell = Math.floor((maxBoardW - gap * (COLS + 1)) / COLS);
+  return { cell, gap };
+}
+
+const { cell, gap } = calcSize();
+
+export let CELL = cell;
+export let GAP = gap;
+export let BOARD_PX = COLS * (CELL + GAP) + GAP;
+
+// Recalcula quando a janela muda de tamanho
+export function recalcSizes() {
+  const { cell, gap } = calcSize();
+  CELL = cell;
+  GAP = gap;
+  BOARD_PX = COLS * (CELL + GAP) + GAP;
+  return { CELL, GAP, BOARD_PX };
+}
 
 export const LEVELS = [
   { target: 800, moves: 20, label: "Funchal" },
