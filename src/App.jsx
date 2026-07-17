@@ -15,7 +15,6 @@ import PauseModal from "./components/PauseModal";
 import PowerUps from "./components/PowerUps";
 
 export default function App() {
-  // Responsive sizing
   const [sizes, setSizes] = useState(() => recalcSizes());
   useEffect(() => {
     const onResize = () => setSizes(recalcSizes());
@@ -311,7 +310,6 @@ export default function App() {
   const pct = Math.min(100, (score / levelConf.target) * 100);
   const starsNow = calcStars(score, levelConf.target);
   const handleReset = () => { setMaxLevel(0); setBestScores({}); setTotalStars(0); setShowSettings(false); setScreen("menu"); };
-
   const isMobile = CELL < 50;
 
   return (
@@ -333,49 +331,65 @@ export default function App() {
         <>
           {paused && <PauseModal level={level} levelConf={levelConf} score={score} moves={moves} onResume={() => setPaused(false)} onRestart={() => startLevel(level)} onExit={() => { setPaused(false); setScreen("levels"); }} />}
 
-          <div style={{ textAlign: "center", marginBottom: isMobile ? 4 : 8 }}>
-            <span className="lbl" style={{ fontSize: isMobile ? "0.5rem" : "0.55rem", letterSpacing: 5 }}>
-              Nível {level + 1} — {levelConf.label}
-            </span>
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: BOARD_PX, marginBottom: isMobile ? 4 : 8, padding: "4px 0" }}>
+          {/* Header compacto */}
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            width: BOARD_PX, marginBottom: isMobile ? 2 : 8, padding: "2px 0",
+          }}>
             <div style={{ textAlign: "center", flex: 1 }}>
-              <div className="lbl" style={{ fontSize: isMobile ? "0.5rem" : "0.65rem" }}>Jogadas</div>
-              <div style={{ fontSize: isMobile ? "1.3rem" : "1.6rem", fontWeight: "bold", color: moves <= 5 ? "#FF6B6B" : moves <= 10 ? "#FFB347" : "#EDE0D0", animation: moves <= 3 ? "shimmer .5s ease-in-out infinite" : "none" }}>{moves}</div>
+              <div style={{ fontSize: isMobile ? "0.45rem" : "0.6rem", color: "#FFBB77", fontWeight: 700, letterSpacing: 1 }}>JOGADAS</div>
+              <div style={{
+                fontSize: isMobile ? "1.4rem" : "1.6rem", fontWeight: 900,
+                color: moves <= 5 ? "#FF6B6B" : moves <= 10 ? "#FFB347" : "#FFF8F0",
+                animation: moves <= 3 ? "shimmer .5s ease-in-out infinite" : "none",
+              }}>{moves}</div>
             </div>
             <div style={{ textAlign: "center", flex: 2 }}>
-              <div className="lbl" style={{ fontSize: isMobile ? "0.5rem" : "0.65rem" }}>Pontos</div>
-              <div style={{ fontSize: isMobile ? "1.5rem" : "2rem", fontWeight: 900, color: "#F2C94C" }}>{displayScore}</div>
+              <div style={{ fontSize: isMobile ? "0.45rem" : "0.6rem", color: "#FFBB77", fontWeight: 700, letterSpacing: 1 }}>PONTOS</div>
+              <div style={{ fontSize: isMobile ? "1.6rem" : "2rem", fontWeight: 900, color: "#FFD666", fontFamily: "'Fredoka One', sans-serif" }}>{displayScore}</div>
             </div>
             <div style={{ textAlign: "center", flex: 1 }}>
-              <div className="lbl" style={{ fontSize: isMobile ? "0.5rem" : "0.65rem" }}>Alvo</div>
-              <div style={{ fontSize: isMobile ? "1rem" : "1.2rem", fontWeight: "bold", color: "#C9B89A" }}>{levelConf.target}</div>
+              <div style={{ fontSize: isMobile ? "0.45rem" : "0.6rem", color: "#FFBB77", fontWeight: 700, letterSpacing: 1 }}>ALVO</div>
+              <div style={{ fontSize: isMobile ? "1rem" : "1.2rem", fontWeight: 800, color: "#FFBB77" }}>{levelConf.target}</div>
             </div>
           </div>
 
-          <div style={{ width: BOARD_PX, height: 5, borderRadius: 3, marginBottom: isMobile ? 4 : 8, overflow: "hidden", background: "rgba(18,9,4,0.8)", border: "1px solid #2a1a0e" }}>
-            <div className="progress-bar" style={{ width: `${pct}%`, height: "100%", background: pct >= 100 ? "linear-gradient(90deg,#4CAF50,#66BB6A)" : "linear-gradient(90deg,#B8860B,#D4A843,#F2C94C)", boxShadow: pct >= 100 ? "0 0 8px rgba(76,175,80,0.4)" : "0 0 6px rgba(212,168,67,0.2)" }} />
-          </div>
-
-          <div style={{ display: "flex", gap: 2, marginBottom: isMobile ? 4 : 8 }}>
-            {[1, 2, 3].map((s) => (
-              <span key={s} style={{ fontSize: isMobile ? "0.8rem" : "1rem", opacity: s <= starsNow ? 1 : 0.15, transition: "opacity 0.4s", filter: s <= starsNow ? "drop-shadow(0 1px 4px rgba(242,201,76,0.4))" : "grayscale(1)" }}>⭐</span>
-            ))}
+          {/* Progress + stars inline */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, width: BOARD_PX, marginBottom: isMobile ? 4 : 8 }}>
+            <div style={{ flex: 1, height: 6, borderRadius: 6, overflow: "hidden", background: "rgba(0,0,0,0.3)", border: "1px solid #5c3520" }}>
+              <div className="progress-bar" style={{
+                width: `${pct}%`, height: "100%",
+                background: pct >= 100
+                  ? "linear-gradient(90deg, #4CAF50, #66BB6A)"
+                  : "linear-gradient(90deg, #E85D26, #FF8C42, #FFD666)",
+                boxShadow: pct >= 100 ? "0 0 8px rgba(76,175,80,0.5)" : "0 0 6px rgba(255,140,66,0.3)",
+              }} />
+            </div>
+            <div style={{ display: "flex", gap: 1 }}>
+              {[1, 2, 3].map((s) => (
+                <span key={s} style={{
+                  fontSize: isMobile ? "0.7rem" : "0.9rem",
+                  opacity: s <= starsNow ? 1 : 0.2,
+                  filter: s <= starsNow ? "drop-shadow(0 1px 3px rgba(255,200,60,0.5))" : "grayscale(1)",
+                  transition: "opacity 0.3s",
+                }}>⭐</span>
+              ))}
+            </div>
           </div>
 
           {activePower && (
             <div style={{
-              marginBottom: 6, padding: "5px 14px", borderRadius: 12,
-              background: "rgba(74,224,122,0.1)", border: "1px solid rgba(74,224,122,0.25)",
-              fontSize: isMobile ? "0.6rem" : "0.7rem", color: "#4AE07A", fontFamily: "'Inter', sans-serif",
-              display: "flex", alignItems: "center", gap: 8,
+              marginBottom: 4, padding: "4px 12px", borderRadius: 20,
+              background: "rgba(122,224,122,0.12)", border: "1px solid rgba(122,224,122,0.3)",
+              fontSize: isMobile ? "0.6rem" : "0.7rem", color: "#7AE07A",
+              display: "flex", alignItems: "center", gap: 6, fontWeight: 700,
             }}>
               <span>👆 Toca num chocolate</span>
-              <button onClick={() => setActivePower(null)} style={{ background: "none", border: "1px solid #4AE07A40", borderRadius: 8, color: "#4AE07A", cursor: "pointer", padding: "2px 8px", fontSize: "0.55rem", fontFamily: "'Inter', sans-serif" }}>✕</button>
+              <button onClick={() => setActivePower(null)} style={{ background: "none", border: "1px solid #7AE07A40", borderRadius: 8, color: "#7AE07A", cursor: "pointer", padding: "1px 6px", fontSize: "0.5rem" }}>✕</button>
             </div>
           )}
 
+          {/* Board */}
           <div className={`board${shake ? " shake" : ""}`} style={{
             width: BOARD_PX, height: ROWS * (CELL + GAP) + GAP, padding: GAP, touchAction: "none",
             cursor: activePower ? "crosshair" : "default",
@@ -409,17 +423,19 @@ export default function App() {
             ))}
           </div>
 
-          {combo > 1 && <div className="combo-badge">🔥 COMBO ×{(1 + (combo - 1) * 0.5).toFixed(1)}</div>}
+          {combo > 1 && <div className="combo-badge">🔥 ×{(1 + (combo - 1) * 0.5).toFixed(1)}</div>}
 
-          <PowerUps powers={powers} onUse={handleUsePower} disabled={cascading || paused} />
-
-          <div style={{ display: "flex", gap: 8, marginTop: isMobile ? 6 : 12 }}>
-            <button className="btn-g" onClick={() => setPaused(true)} style={{ padding: isMobile ? "6px 12px" : "8px 16px", fontSize: isMobile ? "0.65rem" : "0.75rem" }}>⏸ Pausa</button>
-            <button className="btn-g" onClick={() => startLevel(level)} style={{ padding: isMobile ? "6px 12px" : "8px 16px", fontSize: isMobile ? "0.65rem" : "0.75rem" }}>↻ Recomeçar</button>
-            <button className="btn-g" onClick={() => setShowSettings(true)} style={{ padding: isMobile ? "6px 12px" : "8px 16px", fontSize: isMobile ? "0.65rem" : "0.75rem" }}>⚙️</button>
+          <div style={{ display: "flex", gap: 6, marginTop: isMobile ? 4 : 10, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
+            <PowerUps powers={powers} onUse={handleUsePower} disabled={cascading || paused} />
           </div>
 
-          {showHint && !cascading && <div className="hint-txt">💡 Dica disponível</div>}
+          <div style={{ display: "flex", gap: 6, marginTop: isMobile ? 4 : 8 }}>
+            <button className="btn-g" onClick={() => setPaused(true)} style={{ padding: isMobile ? "5px 10px" : "8px 16px", fontSize: isMobile ? "0.6rem" : "0.75rem" }}>⏸</button>
+            <button className="btn-g" onClick={() => startLevel(level)} style={{ padding: isMobile ? "5px 10px" : "8px 16px", fontSize: isMobile ? "0.6rem" : "0.75rem" }}>↻</button>
+            <button className="btn-g" onClick={() => setShowSettings(true)} style={{ padding: isMobile ? "5px 10px" : "8px 16px", fontSize: isMobile ? "0.6rem" : "0.75rem" }}>⚙️</button>
+          </div>
+
+          {showHint && !cascading && <div className="hint-txt">💡 Dica</div>}
         </>
       )}
     </div>
