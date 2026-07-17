@@ -8,8 +8,8 @@ export default function Piece({ type, r, c, cellSize, gapSize, isSelected, isDra
   const GAP = gapSize;
   const x = c * (CELL + GAP);
   const y = r * (CELL + GAP);
-  const dotSize = Math.max(6, Math.round(CELL * 0.15));
-  const radius = Math.max(8, Math.round(CELL * 0.22));
+  const radius = Math.max(10, Math.round(CELL * 0.2));
+  const pad = Math.max(2, Math.round(CELL * 0.05));
 
   const classes = [
     "piece",
@@ -31,22 +31,25 @@ export default function Piece({ type, r, c, cellSize, gapSize, isSelected, isDra
         height: CELL,
         borderRadius: radius,
         border: isSelected
-          ? "3px solid #FFF"
+          ? "3px solid #FFE082"
           : isHint
-            ? "3px solid #4AE07A"
-            : `2px solid ${ch.glow}35`,
+            ? "3px solid #7AE07A"
+            : `2px solid ${ch.glow}50`,
         boxShadow: isDragging
-          ? `0 14px 44px rgba(0,0,0,0.7), 0 0 28px ${ch.glow}90`
+          ? `0 16px 40px rgba(0,0,0,0.6), 0 0 30px ${ch.glow}80`
           : isSelected
-            ? `0 0 20px ${ch.glow}, 0 0 40px ${ch.glow}50`
+            ? `0 0 24px ${ch.glow}90, 0 4px 8px rgba(0,0,0,0.3), inset 0 0 8px ${ch.glow}30`
             : isHint
-              ? "0 0 18px #4AE07A80"
-              : `0 4px 12px rgba(0,0,0,0.35), 0 0 6px ${ch.glow}08`,
+              ? `0 0 20px #7AE07A80, 0 4px 8px rgba(0,0,0,0.3)`
+              : `0 4px 8px rgba(0,0,0,0.4), 0 1px 0 ${ch.glow}15, inset 0 1px 0 rgba(255,255,255,0.08)`,
         zIndex: isDragging ? 100 : isSelected ? 10 : 1,
-        animationDelay: isNew ? `${c * 0.04}s` : "0s",
+        animationDelay: isNew ? `${c * 0.05}s` : "0s",
         overflow: "hidden",
-        padding: Math.max(2, Math.round(CELL * 0.05)),
-        background: `radial-gradient(circle at 50% 40%, ${ch.glow}12 0%, #2a1a10 60%, #221510 100%)`,
+        padding: pad,
+        background: `
+          radial-gradient(circle at 40% 30%, ${ch.glow}18 0%, transparent 50%),
+          linear-gradient(145deg, #4a2818 0%, #3a1e10 50%, #2e150c 100%)
+        `,
       }}
     >
       <img
@@ -59,26 +62,29 @@ export default function Piece({ type, r, c, cellSize, gapSize, isSelected, isDra
           objectFit: "contain",
           borderRadius: Math.max(6, radius - 4),
           pointerEvents: "none",
-          filter: "brightness(1.25) contrast(1.1) saturate(1.15)",
+          filter: "brightness(1.3) contrast(1.1) saturate(1.2)",
         }}
       />
+      {/* Shine overlay */}
+      <div style={{
+        position: "absolute",
+        top: 0, left: 0, right: 0, height: "40%",
+        borderRadius: `${radius}px ${radius}px 50% 50%`,
+        background: "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)",
+        pointerEvents: "none",
+      }} />
+      {/* Color indicator */}
       <div style={{
         position: "absolute",
         bottom: 2, right: 2,
-        width: dotSize, height: dotSize,
+        width: Math.max(7, Math.round(CELL * 0.14)),
+        height: Math.max(7, Math.round(CELL * 0.14)),
         borderRadius: "50%",
-        background: `radial-gradient(circle, ${ch.glow} 40%, ${ch.glow}60 100%)`,
-        opacity: 0.85,
-        boxShadow: `0 0 ${dotSize}px ${ch.glow}80`,
+        background: ch.glow,
+        opacity: 0.9,
+        boxShadow: `0 0 6px ${ch.glow}`,
         pointerEvents: "none",
-        border: "1px solid rgba(0,0,0,0.3)",
-      }} />
-      <div style={{
-        position: "absolute",
-        top: 0, left: 0, right: 0, height: "35%",
-        borderRadius: `${radius}px ${radius}px 50% 50%`,
-        background: "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 100%)",
-        pointerEvents: "none",
+        border: "1.5px solid rgba(0,0,0,0.3)",
       }} />
     </div>
   );

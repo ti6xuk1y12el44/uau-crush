@@ -4,11 +4,11 @@ export default function Menu({ totalStars, onPlay, onSettings, onAbout }) {
   return (
     <>
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-        {[...Array(20)].map((_, i) => (
+        {[...Array(25)].map((_, i) => (
           <div key={i} className="amb" style={{
-            width: 2 + Math.random() * 4, height: 2 + Math.random() * 4,
-            background: i % 4 === 0 ? "#D4A843" : i % 4 === 1 ? "#6B4226" : i % 4 === 2 ? "#F2C94C" : "#8B5E3C",
-            opacity: 0.04 + Math.random() * 0.08,
+            width: 3 + Math.random() * 5, height: 3 + Math.random() * 5,
+            background: i % 3 === 0 ? "#FFD666" : i % 3 === 1 ? "#FF8C42" : "#FFA060",
+            opacity: 0.04 + Math.random() * 0.06,
             left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`,
             animation: `floatY ${3 + Math.random() * 5}s ease-in-out infinite`,
             animationDelay: `${Math.random() * 6}s`,
@@ -16,78 +16,90 @@ export default function Menu({ totalStars, onPlay, onSettings, onAbout }) {
         ))}
       </div>
 
-      <div style={{ textAlign: "center", zIndex: 1, maxWidth: 520 }}>
+      <div style={{ textAlign: "center", zIndex: 1, maxWidth: 500 }}>
+        {/* Logo */}
         <div style={{
-          width: 90, height: 90, margin: "0 auto 20px",
+          width: 100, height: 100, margin: "0 auto 16px",
           borderRadius: "50%",
-          background: "radial-gradient(circle at 40% 35%, #3a2518, #2a1810)",
-          border: "2px solid #D4A84325",
+          background: "linear-gradient(145deg, #6B3A1E, #4a2818)",
+          border: "4px solid #8B5E3C",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 0 30px rgba(212,168,67,0.08)",
-          fontSize: "3rem",
+          boxShadow: "0 0 0 3px #2e120c, 0 8px 24px rgba(0,0,0,0.4), 0 0 30px rgba(255,200,60,0.1)",
+          fontSize: "3.2rem",
         }}>🍫</div>
 
-        <h1 className="gold" style={{ fontSize: "3.4rem", fontWeight: 900, letterSpacing: 8, margin: "0 0 6px" }}>
+        <h1 className="gold" style={{
+          fontSize: "3.5rem", fontWeight: 900, letterSpacing: 4, margin: "0 0 4px",
+          fontFamily: "'Fredoka One', sans-serif",
+        }}>
           UAU CRUSH
         </h1>
-        <div style={{ width: 80, height: 2, margin: "0 auto 10px", background: "linear-gradient(90deg, transparent, #D4A843, transparent)" }} />
-        <p style={{ fontSize: "0.75rem", letterSpacing: 10, textTransform: "uppercase", color: "#8B7355", margin: "0 0 4px", fontFamily: "'Inter', sans-serif" }}>
+        <p style={{
+          fontSize: "0.85rem", letterSpacing: 6, textTransform: "uppercase",
+          color: "#FFBB77", margin: "0 0 4px",
+          fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.3)",
+        }}>
           by Uau Cacau
         </p>
-        <p style={{ fontSize: "0.65rem", letterSpacing: 5, color: "#5a3a22", margin: "0 0 36px", fontFamily: "'Inter', sans-serif" }}>
+        <p style={{
+          fontSize: "0.7rem", letterSpacing: 4, color: "#A06030",
+          margin: "0 0 32px", fontWeight: 600,
+        }}>
           Ilha da Madeira 🏝️
         </p>
 
         {totalStars > 0 && (
           <div style={{
-            display: "inline-block", padding: "8px 24px", borderRadius: 24,
-            background: "rgba(212,168,67,0.06)", border: "1px solid rgba(212,168,67,0.12)",
-            fontSize: "0.8rem", color: "#D4A843", marginBottom: 32, fontFamily: "'Inter', sans-serif",
+            display: "inline-block", padding: "8px 24px", borderRadius: 30,
+            background: "linear-gradient(180deg, #5c3520, #4a2818)",
+            border: "2px solid #7a4a30",
+            fontSize: "0.85rem", color: "#FFD08A", marginBottom: 28,
+            fontWeight: 700, boxShadow: "0 3px 0 #2e1a0e, 0 4px 8px rgba(0,0,0,0.2)",
           }}>
-            ⭐ {totalStars} estrelas conquistadas
+            ⭐ {totalStars} estrelas
           </div>
         )}
-        {totalStars === 0 && <div style={{ height: 24 }} />}
+        {totalStars === 0 && <div style={{ height: 20 }} />}
 
+        {/* Chocolate showcase */}
         <div style={{
-          display: "flex", gap: 12, justifyContent: "center", marginBottom: 44,
+          display: "flex", gap: 10, justifyContent: "center", marginBottom: 40,
           flexWrap: "wrap", padding: "0 10px",
         }}>
           {CHOCOLATES.map((ch, i) => (
             <div key={i} style={{
-              width: 64, height: 64, borderRadius: 16,
-              background: `radial-gradient(circle at 50% 40%, ${ch.glow}10, #2a1810 70%)`,
-              border: `2px solid ${ch.glow}30`,
-              boxShadow: `0 4px 16px rgba(0,0,0,0.4), 0 0 12px ${ch.glow}10`,
+              width: 58, height: 58, borderRadius: 14,
+              background: `
+                radial-gradient(circle at 40% 30%, ${ch.glow}20, transparent 60%),
+                linear-gradient(145deg, #4a2818, #3a1e10)
+              `,
+              border: `2px solid ${ch.glow}40`,
+              boxShadow: `0 4px 8px rgba(0,0,0,0.3), 0 0 8px ${ch.glow}10`,
               animation: `floatY ${2.5 + i * 0.35}s ease-in-out infinite`,
               animationDelay: `${i * 0.12}s`,
-              overflow: "hidden", padding: 5,
-              transition: "transform 0.2s, box-shadow 0.2s",
+              overflow: "hidden", padding: 4,
             }}>
               <img src={ch.img} alt={ch.name} draggable={false} style={{
                 width: "100%", height: "100%", objectFit: "contain",
-                borderRadius: 10, filter: "brightness(1.3) contrast(1.1) saturate(1.15)",
+                borderRadius: 10, filter: "brightness(1.3) contrast(1.1) saturate(1.2)",
               }} />
             </div>
           ))}
         </div>
 
+        {/* Play button */}
         <button className="btn-p" onClick={onPlay} style={{
-          animation: "glowPulse 2.5s ease-in-out infinite",
-          fontSize: "1.35rem", padding: "20px 72px", letterSpacing: 6,
-          borderRadius: 60,
+          animation: "glowPulse 2s ease-in-out infinite",
+          fontSize: "1.5rem", padding: "18px 80px", letterSpacing: 4,
         }}>
-          Jogar
+          JOGAR
         </button>
 
-        <div style={{ display: "flex", gap: 14, justifyContent: "center", marginTop: 24 }}>
-          <button className="btn-g" onClick={onSettings} style={{ padding: "10px 24px" }}>⚙️ Definições</button>
-          <button className="btn-g" onClick={onAbout} style={{ padding: "10px 24px" }}>🍫 Sobre</button>
+        {/* Secondary buttons */}
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 20 }}>
+          <button className="btn-g" onClick={onSettings}>⚙️ Definições</button>
+          <button className="btn-g" onClick={onAbout}>🍫 Sobre</button>
         </div>
-
-        <p style={{ fontSize: "0.5rem", color: "#2a1810", marginTop: 36, letterSpacing: 3, fontFamily: "'Inter', sans-serif" }}>
-          Chocolate artesanal desde 2014
-        </p>
       </div>
     </>
   );
