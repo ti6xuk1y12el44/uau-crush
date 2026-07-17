@@ -23,20 +23,189 @@ export function recalcSizes() {
   return { CELL, GAP, BOARD_PX };
 }
 
+function parseMask(strings) {
+  return strings.map(row => row.split("").map(c => c === "#"));
+}
+
 export const LEVELS = [
-  { target: 600, moves: 20, label: "Funchal" },
-  { target: 900, moves: 18, label: "Câmara de Lobos" },
-  { target: 1200, moves: 18, label: "Ribeira Brava" },
-  { target: 1600, moves: 16, label: "Ponta do Sol" },
-  { target: 2000, moves: 16, label: "Calheta" },
-  { target: 2500, moves: 15, label: "Porto Moniz" },
-  { target: 3000, moves: 14, label: "São Vicente" },
-  { target: 3500, moves: 14, label: "Santana" },
-  { target: 4000, moves: 13, label: "Machico" },
-  { target: 4500, moves: 12, label: "Santa Cruz" },
-  { target: 5000, moves: 15, label: "Curral das Freiras" },
-  { target: 5500, moves: 14, label: "Pico do Arieiro" },
-  { target: 6000, moves: 13, label: "Pico Ruivo" },
-  { target: 7000, moves: 12, label: "Levada do Caldeirão" },
-  { target: 8000, moves: 12, label: "Mercado dos Lavradores" },
+  {
+    target: 600, moves: 20, label: "Funchal",
+    mask: parseMask([
+      "#######",
+      "#######",
+      "#######",
+      "#######",
+      "#######",
+      "#######",
+      "#######",
+    ])
+  },
+  {
+    target: 900, moves: 18, label: "Câmara de Lobos",
+    mask: parseMask([
+      "...#...",
+      "..###..",
+      ".#####.",
+      "#######",
+      ".#####.",
+      "..###..",
+      "...#...",
+    ])
+  },
+  {
+    target: 1200, moves: 18, label: "Ribeira Brava",
+    mask: parseMask([
+      "..###..",
+      "..###..",
+      "#######",
+      "#######",
+      "#######",
+      "..###..",
+      "..###..",
+    ])
+  },
+  {
+    target: 1600, moves: 20, label: "Ponta do Sol",
+    mask: parseMask([
+      ".##.##.",
+      "#######",
+      "#######",
+      ".#####.",
+      ".#####.",
+      "..###..",
+      "...#...",
+    ])
+  },
+  {
+    target: 2000, moves: 18, label: "Calheta",
+    mask: parseMask([
+      "#.....#",
+      "##...##",
+      ".##.##.",
+      "..###..",
+      ".##.##.",
+      "##...##",
+      "#.....#",
+    ])
+  },
+  {
+    target: 2500, moves: 18, label: "Porto Moniz",
+    mask: parseMask([
+      "..###..",
+      ".#####.",
+      "#######",
+      "#######",
+      "#######",
+      ".#####.",
+      "..###..",
+    ])
+  },
+  {
+    target: 3000, moves: 16, label: "São Vicente",
+    mask: parseMask([
+      "#######",
+      "#######",
+      "..###..",
+      "..###..",
+      "..###..",
+      "..###..",
+      "..###..",
+    ])
+  },
+  {
+    target: 3500, moves: 18, label: "Santana",
+    mask: parseMask([
+      "...#...",
+      "..###..",
+      "..###..",
+      ".#####.",
+      ".#####.",
+      "#######",
+      "#######",
+    ])
+  },
+  {
+    target: 4000, moves: 16, label: "Machico",
+    mask: parseMask([
+      "##...##",
+      "##...##",
+      "##...##",
+      "##...##",
+      "##.#.##",
+      "#######",
+      "#######",
+    ])
+  },
+  {
+    target: 4500, moves: 18, label: "Santa Cruz",
+    mask: parseMask([
+      "#..#..#",
+      "##.#.##",
+      ".#####.",
+      "..###..",
+      ".#####.",
+      "##.#.##",
+      "#..#..#",
+    ])
+  },
+  {
+    target: 5000, moves: 18, label: "Curral das Freiras",
+    mask: parseMask([
+      "#######",
+      ".#####.",
+      "..###..",
+      "...#...",
+      "..###..",
+      ".#####.",
+      "#######",
+    ])
+  },
+  {
+    target: 5500, moves: 16, label: "Pico do Arieiro",
+    mask: parseMask([
+      "...#...",
+      "..###..",
+      ".#####.",
+      "#######",
+      "#######",
+      "#######",
+      "#######",
+    ])
+  },
+  {
+    target: 6000, moves: 16, label: "Pico Ruivo",
+    mask: parseMask([
+      ".#####.",
+      "#.###.#",
+      "##.#.##",
+      "#######",
+      "##.#.##",
+      "#.###.#",
+      ".#####.",
+    ])
+  },
+  {
+    target: 7000, moves: 18, label: "Levada do Caldeirão",
+    mask: parseMask([
+      "###....",
+      "####...",
+      ".####..",
+      "..####.",
+      "...####",
+      "....###",
+      "....###",
+    ])
+  },
+  {
+    target: 8000, moves: 20, label: "Mercado dos Lavradores",
+    mask: parseMask([
+      ".#####.",
+      "#######",
+      "#######",
+      "#######",
+      "#######",
+      "#######",
+      ".#####.",
+    ])
+  },
 ];
