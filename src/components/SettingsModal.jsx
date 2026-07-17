@@ -1,5 +1,6 @@
 export default function SettingsModal({ settings, setSettings, totalStars, maxLevel, onReset, onClose }) {
   const items = [
+    { key: "sound", label: "Sons", desc: "Efeitos sonoros ao jogar" },
     { key: "haptics", label: "Vibração", desc: "Feedback ao combinar" },
     { key: "animations", label: "Animações", desc: "Partículas e efeitos" },
     { key: "showHints", label: "Dicas automáticas", desc: "Mostrar jogada após 60s" },

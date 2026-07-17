@@ -4,6 +4,8 @@ import { CHOCOLATES } from "./constants/chocolates";
 import { createValidBoard, removeFill, hasValidMoves, shuffleBoard, removeType } from "./engine/board";
 import { findMatches, findHint } from "./engine/matching";
 import { calcStars, calcMatchPoints } from "./engine/scoring";
+import { playMatch, playCombo, playSwap, playInvalid, playSelect, playWin, playLose, playPowerUp, playStar } from "./engine/sounds";
+import { loadProgress, saveProgress, clearProgress } from "./engine/storage";
 import Piece from "./components/Piece";
 import Particles from "./components/Particles";
 import Menu from "./components/Menu";
@@ -13,6 +15,7 @@ import SettingsModal from "./components/SettingsModal";
 import AboutModal from "./components/AboutModal";
 import PauseModal from "./components/PauseModal";
 import PowerUps from "./components/PowerUps";
+import Confetti from "./components/Confetti";
 
 export default function App() {
   const [sizes, setSizes] = useState(() => recalcSizes());
@@ -23,9 +26,12 @@ export default function App() {
   }, []);
   const { CELL, GAP, BOARD_PX } = sizes;
 
+  // Load saved progress
+  const saved = useRef(loadProgress());
+
   const [screen, setScreen] = useState("menu");
   const [level, setLevel] = useState(0);
-  const [maxLevel, setMaxLevel] = useState(0);
+  const [maxLevel, setMaxLevel] = useState(saved.current?.maxLevel || 0);
   const [board, setBoard] = useState([]);
   const [score, setScore] = useState(0);
   const [displayScore, setDisplayScore] = useState(0);
@@ -43,18 +49,27 @@ export default function App() {
   const [hint, setHint] = useState(null);
   const [showHint, setShowHint] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [bestScores, setBestScores] = useState({});
+  const [bestScores, setBestScores] = useState(saved.current?.bestScores || {});
   const [totalStars, setTotalStars] = useState(0);
-  const [settings, setSettings] = useState({ haptics: true, animations: true, showHints: true });
+  const [settings, setSettings] = useState(saved.current?.settings || { haptics: true, animations: true, showHints: true, sound: true });
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [powers, setPowers] = useState({ destroy: 3, shuffle: 2, bomb: 1 });
   const [activePower, setActivePower] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const dragStart = useRef(null);
   const pIdRef = useRef(0);
   const fIdRef = useRef(0);
   const hintTimer = useRef(null);
+
+  // Sound helper
+  const snd = useCallback((fn) => { if (settings.sound) fn(); }, [settings.sound]);
+
+  // Save progress whenever it changes
+  useEffect(() => {
+    saveProgress(maxLevel, bestScores, settings);
+  }, [maxLevel, bestScores, settings]);
 
   useEffect(() => {
     if (displayScore === score) return;
@@ -118,7 +133,7 @@ export default function App() {
     setLevel(lvl); setSelected(null); setCascading(false); setCombo(0);
     setParticles([]); setFloats([]); setNewCells(new Set()); setMatchedCells(null);
     setDragging(null); setHint(null); setShowHint(false); setPaused(false);
-    setActivePower(null);
+    setActivePower(null); setShowConfetti(false);
     setPowers({ destroy: 3, shuffle: 2, bomb: 1 });
     setScreen("playing");
   }, []);
@@ -137,8 +152,11 @@ export default function App() {
             if (!old || sc > old.score) return { ...prev, [level]: { score: sc, stars: st } };
             return prev;
           });
+          snd(playWin);
+          setShowConfetti(true);
           setTimeout(() => setScreen("win"), 400);
         } else {
+          snd(playLose);
           setTimeout(() => setScreen("lose"), 400);
         }
       }
@@ -150,6 +168,8 @@ export default function App() {
     const { points, multiplier } = calcMatchPoints(count, newCmb);
     const newSc = sc + points;
     setScore(newSc); setCombo(newCmb);
+
+    if (newCmb >= 3) { snd(playCombo); } else { snd(playMatch); }
 
     let cr = 0, cc = 0, n = 0, tp = 0;
     for (let r = 0; r < ROWS; r++)
@@ -165,6 +185,11 @@ export default function App() {
     }
     if (newCmb >= 3) { setShake(true); setTimeout(() => setShake(false), 300); }
 
+    // Check star milestones
+    const prevStars = calcStars(sc - points, LEVELS[level].target);
+    const newStars = calcStars(newSc, LEVELS[level].target);
+    if (newStars > prevStars) snd(playStar);
+
     setTimeout(() => {
       const nb = removeFill(brd, matched);
       setBoard(nb); setMatchedCells(null);
@@ -175,7 +200,7 @@ export default function App() {
       setNewCells(nc);
       setTimeout(() => { setNewCells(new Set()); processCascade(nb, newSc, newCmb, mvs); }, 300);
     }, 400);
-  }, [level, spawnFloat, spawnParticles, vib]);
+  }, [level, spawnFloat, spawnParticles, vib, snd]);
 
   const doSwap = useCallback((r1, c1, r2, c2) => {
     if (cascading) return;
@@ -183,7 +208,7 @@ export default function App() {
     const nb = board.map((r) => [...r]);
     [nb[r1][c1], nb[r2][c2]] = [nb[r2][c2], nb[r1][c1]];
     if (findMatches(nb).count === 0) {
-      setBoard(nb); vib(8);
+      setBoard(nb); vib(8); snd(playInvalid);
       setTimeout(() => {
         const rv = nb.map((r) => [...r]);
         [rv[r1][c1], rv[r2][c2]] = [rv[r2][c2], rv[r1][c1]];
@@ -191,24 +216,26 @@ export default function App() {
       }, 200);
       return;
     }
+    snd(playSwap);
     const nm = moves - 1; setMoves(nm); setBoard(nb); vib(15);
     setTimeout(() => { setCascading(true); processCascade(nb, score, 0, nm); }, 250);
-  }, [board, moves, score, cascading, processCascade, vib]);
+  }, [board, moves, score, cascading, processCascade, vib, snd]);
 
   const handleUsePower = useCallback((key) => {
     if (cascading || screen !== "playing") return;
     if (key === "shuffle") {
       setPowers((p) => ({ ...p, shuffle: p.shuffle - 1 }));
       setBoard(shuffleBoard(board));
-      vib(20);
+      vib(20); snd(playPowerUp);
       setShowHint(false); setHint(null);
       return;
     }
     if (key === "destroy" || key === "bomb") {
       setActivePower(key);
       setSelected(null);
+      snd(playSelect);
     }
-  }, [cascading, screen, board, vib]);
+  }, [cascading, screen, board, vib, snd]);
 
   const handlePowerClick = useCallback((r, c) => {
     if (!activePower) return false;
@@ -226,7 +253,7 @@ export default function App() {
           if (nb[row][col] >= 0) { nb[w][col] = nb[row][col]; if (w !== row) nb[row][col] = -1; w--; }
         for (let row = w; row >= 0; row--) nb[row][col] = Math.floor(Math.random() * CHOCOLATES.length);
       }
-      setBoard(nb); vib(20); setActivePower(null);
+      setBoard(nb); vib(20); snd(playPowerUp); setActivePower(null);
       setTimeout(() => {
         if (findMatches(nb).count > 0) { setCascading(true); processCascade(nb, score + 50, 0, moves); }
       }, 300);
@@ -246,7 +273,7 @@ export default function App() {
           for (let ci = 0; ci < COLS; ci++)
             if (matched[ri][ci]) positions.push({ r: ri, c: ci });
         spawnParticles(positions.slice(0, 8), type);
-        vib(40);
+        vib(40); snd(playPowerUp);
         setTimeout(() => {
           const nb = removeFill(board, matched);
           setBoard(nb); setMatchedCells(null); setActivePower(null);
@@ -256,15 +283,16 @@ export default function App() {
       return true;
     }
     return false;
-  }, [activePower, board, score, moves, spawnParticles, spawnFloat, vib, processCascade]);
+  }, [activePower, board, score, moves, spawnParticles, spawnFloat, vib, processCascade, snd]);
 
   const handlePointerDown = useCallback((r, c, e) => {
     if (cascading || screen !== "playing" || paused) return;
     e.preventDefault();
     if (activePower) { handlePowerClick(r, c); return; }
+    snd(playSelect);
     dragStart.current = { r, c, startX: e.clientX || 0, startY: e.clientY || 0, hasMoved: false };
     setDragging({ r, c }); setDragOffset({ x: 0, y: 0 }); setSelected({ r, c });
-  }, [cascading, screen, paused, activePower, handlePowerClick]);
+  }, [cascading, screen, paused, activePower, handlePowerClick, snd]);
 
   useEffect(() => {
     if (!dragging) return;
@@ -309,11 +337,16 @@ export default function App() {
   const levelConf = LEVELS[level] || LEVELS[0];
   const pct = Math.min(100, (score / levelConf.target) * 100);
   const starsNow = calcStars(score, levelConf.target);
-  const handleReset = () => { setMaxLevel(0); setBestScores({}); setTotalStars(0); setShowSettings(false); setScreen("menu"); };
   const isMobile = CELL < 50;
+
+  const handleReset = () => {
+    setMaxLevel(0); setBestScores({}); setTotalStars(0);
+    setShowSettings(false); clearProgress(); setScreen("menu");
+  };
 
   return (
     <div id="app">
+      <Confetti active={showConfetti} />
       {showSettings && <SettingsModal settings={settings} setSettings={setSettings} totalStars={totalStars} maxLevel={maxLevel} onReset={handleReset} onClose={() => setShowSettings(false)} />}
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 
@@ -323,15 +356,15 @@ export default function App() {
 
       {(screen === "win" || screen === "lose") && (
         <EndScreen isWin={screen === "win"} score={score} level={level} levelConf={levelConf} bestScore={bestScores[level]}
-          onNext={() => { if (level < LEVELS.length - 1) startLevel(level + 1); else startLevel(level); }}
-          onRetry={() => startLevel(level)} onLevels={() => setScreen("levels")} />
+          onNext={() => { setShowConfetti(false); if (level < LEVELS.length - 1) startLevel(level + 1); else startLevel(level); }}
+          onRetry={() => { setShowConfetti(false); startLevel(level); }}
+          onLevels={() => { setShowConfetti(false); setScreen("levels"); }} />
       )}
 
       {screen === "playing" && (
         <>
           {paused && <PauseModal level={level} levelConf={levelConf} score={score} moves={moves} onResume={() => setPaused(false)} onRestart={() => startLevel(level)} onExit={() => { setPaused(false); setScreen("levels"); }} />}
 
-          {/* Header compacto */}
           <div style={{
             display: "flex", justifyContent: "space-between", alignItems: "center",
             width: BOARD_PX, marginBottom: isMobile ? 2 : 8, padding: "2px 0",
@@ -354,14 +387,11 @@ export default function App() {
             </div>
           </div>
 
-          {/* Progress + stars inline */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, width: BOARD_PX, marginBottom: isMobile ? 4 : 8 }}>
             <div style={{ flex: 1, height: 6, borderRadius: 6, overflow: "hidden", background: "rgba(0,0,0,0.3)", border: "1px solid #5c3520" }}>
               <div className="progress-bar" style={{
                 width: `${pct}%`, height: "100%",
-                background: pct >= 100
-                  ? "linear-gradient(90deg, #4CAF50, #66BB6A)"
-                  : "linear-gradient(90deg, #E85D26, #FF8C42, #FFD666)",
+                background: pct >= 100 ? "linear-gradient(90deg, #4CAF50, #66BB6A)" : "linear-gradient(90deg, #E85D26, #FF8C42, #FFD666)",
                 boxShadow: pct >= 100 ? "0 0 8px rgba(76,175,80,0.5)" : "0 0 6px rgba(255,140,66,0.3)",
               }} />
             </div>
@@ -389,7 +419,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Board */}
           <div className={`board${shake ? " shake" : ""}`} style={{
             width: BOARD_PX, height: ROWS * (CELL + GAP) + GAP, padding: GAP, touchAction: "none",
             cursor: activePower ? "crosshair" : "default",
@@ -431,7 +460,6 @@ export default function App() {
 
           <div style={{ display: "flex", gap: 6, marginTop: isMobile ? 4 : 8 }}>
             <button className="btn-g" onClick={() => setPaused(true)} style={{ padding: isMobile ? "5px 10px" : "8px 16px", fontSize: isMobile ? "0.6rem" : "0.75rem" }}>⏸</button>
-            <button className="btn-g" onClick={() => startLevel(level)} style={{ padding: isMobile ? "5px 10px" : "8px 16px", fontSize: isMobile ? "0.6rem" : "0.75rem" }}>↻</button>
             <button className="btn-g" onClick={() => setShowSettings(true)} style={{ padding: isMobile ? "5px 10px" : "8px 16px", fontSize: isMobile ? "0.6rem" : "0.75rem" }}>⚙️</button>
           </div>
 
