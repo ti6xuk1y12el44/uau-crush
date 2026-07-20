@@ -1,6 +1,6 @@
 import { CHOCOLATES } from "../constants/chocolates";
 
-export default function Menu({ totalStars, onPlay, onSettings, onAbout }) {
+export default function Menu({ totalStars, onPlay, onSettings, onAbout, onLeaderboard }) {
   return (
     <>
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
@@ -97,6 +97,7 @@ export default function Menu({ totalStars, onPlay, onSettings, onAbout }) {
 
         {/* Secondary buttons */}
         <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 20 }}>
+          <button className="btn-g" onClick={onLeaderboard}>🏆 Ranking</button>
           <button className="btn-g" onClick={onSettings}>⚙️ Definições</button>
           <button className="btn-g" onClick={onAbout}>🍫 Sobre</button>
         </div>

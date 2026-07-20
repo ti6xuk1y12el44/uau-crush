@@ -1,3 +1,4 @@
+import SubmitScore from "./SubmitScore";
 import { calcStars } from "../engine/scoring";
 import { LEVELS } from "../constants/levels";
 
@@ -108,6 +109,16 @@ export default function EndScreen({ isWin, score, level, levelConf, bestScore, o
           </div>
         )}
       </div>
+
+      {isWin && (
+        <SubmitScore
+        score={score}
+        level={level}
+        levelName={levelConf.label}
+        stars={stars}
+        onDone={() => {}}
+      />
+    )}
 
       {/* Buttons */}
       <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>

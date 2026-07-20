@@ -1,3 +1,5 @@
+import Leaderboard from "./components/Leaderboard";
+import SubmitScore from "./components/SubmitScore";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { LEVELS, COLS, ROWS, recalcSizes } from "./constants/levels";
 import { CHOCOLATES } from "./constants/chocolates";
@@ -58,6 +60,7 @@ export default function App() {
   const [activePower, setActivePower] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showTutorial, setShowTutorial] = useState(() => !loadProgress());
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const dragStart = useRef(null);
   const pIdRef = useRef(0);
@@ -314,9 +317,9 @@ export default function App() {
       {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
       {showSettings && <SettingsModal settings={settings} setSettings={setSettings} totalStars={totalStars} maxLevel={maxLevel} onReset={handleReset} onClose={() => setShowSettings(false)} />}
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
 
-      {screen === "menu" && <Menu totalStars={totalStars} onPlay={() => setScreen("levels")} onSettings={() => setShowSettings(true)} onAbout={() => setShowAbout(true)} />}
-      {screen === "levels" && <Levels maxLevel={maxLevel} bestScores={bestScores} totalStars={totalStars} onStart={startLevel} onBack={() => setScreen("menu")} onSettings={() => setShowSettings(true)} />}
+      {screen === "menu" && <Menu totalStars={totalStars} onPlay={() => setScreen("levels")} onSettings={() => setShowSettings(true)} onAbout={() => setShowAbout(true)} onLeaderboard={() => setShowLeaderboard(true)} />}      {screen === "levels" && <Levels maxLevel={maxLevel} bestScores={bestScores} totalStars={totalStars} onStart={startLevel} onBack={() => setScreen("menu")} onSettings={() => setShowSettings(true)} />}
       {(screen === "win" || screen === "lose") && (
         <EndScreen isWin={screen === "win"} score={score} level={level} levelConf={levelConf} bestScore={bestScores[level]}
           onNext={() => { setShowConfetti(false); if (level < LEVELS.length - 1) startLevel(level + 1); else startLevel(level); }}
